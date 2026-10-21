@@ -1,4 +1,5 @@
-
+using Insurance_Backend.Data;
+using Microsoft.EntityFrameworkCore;
 namespace Insurance_Backend
 {
     public class Program
@@ -13,6 +14,14 @@ namespace Insurance_Backend
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+
+
+            builder.Services.AddDbContext<AppDbContext>(options =>
+            {
+                options.UseSqlServer(
+                    builder.Configuration.GetConnectionString("DatabaseConnection"));
+            });
 
             var app = builder.Build();
 

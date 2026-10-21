@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Security.Claims;
-
+using Insurance_Backend.Enums;
 namespace Insurance_Backend.Models
 {
     public class Policy
