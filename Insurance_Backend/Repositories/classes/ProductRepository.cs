@@ -18,98 +18,119 @@ namespace Insurance_Backend.Repositories.classes
         }
         public async Task<ProductResponseDTO?> ActivateProduct(int productId)
         {
-            var product =await _context.InsuranceProduct.FindAsync(productId);
-            if(product == null)
+            var product = await _context.InsuranceProduct.FindAsync(productId);
+
+            if (product == null)
             {
                 return null;
             }
+
             product.ActiveStatus = ActiveStatus.Active;
+            product.UpdatedDate = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
-            return new ProductResponseDTO
-            {
-                ProductId = product.ProductId,
-                ProductName = product.ProductName,
-                ProductType = product.ProductType,
-                Description = product.Description,
-                ActiveStatus = product.ActiveStatus,
-                CreatedDate = product.CreatedDate,
-                UpdatedDate = product.UpdatedDate
-            };
+
+            return await _context.InsuranceProduct
+                .AsNoTracking()
+                .Where(p => p.ProductId == productId)
+                .Select(p => new ProductResponseDTO
+                {
+                    ProductId = p.ProductId,
+                    ProductName = p.ProductName,
+                    ProductType = p.ProductType,
+                    Description = p.Description,
+                    ActiveStatus = p.ActiveStatus,
+                    CreatedDate = p.CreatedDate,
+                    UpdatedDate = p.UpdatedDate
+                })
+                .FirstOrDefaultAsync();
         }
 
         public async Task<ProductResponseDTO> CreateProduct(InsuranceProduct product)
         {
             _context.InsuranceProduct.Add(product);
             await _context.SaveChangesAsync();
-            return new ProductResponseDTO
-            {
-                ProductId = product.ProductId,
-                ProductName = product.ProductName,
-                ProductType = product.ProductType,
-                Description = product.Description,
-                ActiveStatus = product.ActiveStatus,
-                CreatedDate = product.CreatedDate,
-                UpdatedDate = product.UpdatedDate
-            };
+
+            return await _context.InsuranceProduct
+                .AsNoTracking()
+                .Where(p => p.ProductId == product.ProductId)
+                .Select(p => new ProductResponseDTO
+                {
+                    ProductId = p.ProductId,
+                    ProductName = p.ProductName,
+                    ProductType = p.ProductType,
+                    Description = p.Description,
+                    ActiveStatus = p.ActiveStatus,
+                    CreatedDate = p.CreatedDate,
+                    UpdatedDate = p.UpdatedDate
+                })
+                .FirstAsync();
         }
 
         public async Task<ProductResponseDTO?> DeactivateProduct(int productId)
         {
             var product = await _context.InsuranceProduct.FindAsync(productId);
+
             if (product == null)
             {
                 return null;
             }
+
             product.ActiveStatus = ActiveStatus.Inactive;
+            product.UpdatedDate = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
-            return new ProductResponseDTO
-            {
-                ProductId = product.ProductId,
-                ProductName = product.ProductName,
-                ProductType = product.ProductType,
-                Description = product.Description,
-                ActiveStatus = product.ActiveStatus,
-                CreatedDate = product.CreatedDate,
-                UpdatedDate = product.UpdatedDate
-            };
+
+            return await _context.InsuranceProduct
+                .AsNoTracking()
+                .Where(p => p.ProductId == productId)
+                .Select(p => new ProductResponseDTO
+                {
+                    ProductId = p.ProductId,
+                    ProductName = p.ProductName,
+                    ProductType = p.ProductType,
+                    Description = p.Description,
+                    ActiveStatus = p.ActiveStatus,
+                    CreatedDate = p.CreatedDate,
+                    UpdatedDate = p.UpdatedDate
+                })
+                .FirstOrDefaultAsync();
         }
 
         public async Task<ProductResponseDTO?> GetProductById(int productId)
         {
-            var product = await _context.InsuranceProduct.FindAsync(productId);
-            if (product == null)
-            {
-                return null;
-            }
-            return new ProductResponseDTO
-            {
-                ProductId = product.ProductId,
-                ProductName = product.ProductName,
-                ProductType = product.ProductType,
-                Description = product.Description,
-                ActiveStatus = product.ActiveStatus,
-                CreatedDate = product.CreatedDate,
-                UpdatedDate = product.UpdatedDate
-            };
+            return await _context.InsuranceProduct
+                .AsNoTracking()
+                .Where(p => p.ProductId == productId)
+                .Select(p => new ProductResponseDTO
+                {
+                    ProductId = p.ProductId,
+                    ProductName = p.ProductName,
+                    ProductType = p.ProductType,
+                    Description = p.Description,
+                    ActiveStatus = p.ActiveStatus,
+                    CreatedDate = p.CreatedDate,
+                    UpdatedDate = p.UpdatedDate
+                })
+                .FirstOrDefaultAsync();
         }
 
         public async Task<ProductResponseDTO?> GetProductByProductName(string productName)
         {
-            var product = await _context.InsuranceProduct.FirstOrDefaultAsync(p=>p.ProductName == productName);
-            if (product == null)
-            {
-                return null;
-            }
-            return new ProductResponseDTO
-            {
-                ProductId = product.ProductId,
-                ProductName = product.ProductName,
-                ProductType = product.ProductType,
-                Description = product.Description,
-                ActiveStatus = product.ActiveStatus,
-                CreatedDate = product.CreatedDate,
-                UpdatedDate = product.UpdatedDate
-            };
+            return await _context.InsuranceProduct
+                .AsNoTracking()
+                .Where(p => p.ProductName == productName)
+                .Select(p => new ProductResponseDTO
+                {
+                    ProductId = p.ProductId,
+                    ProductName = p.ProductName,
+                    ProductType = p.ProductType,
+                    Description = p.Description,
+                    ActiveStatus = p.ActiveStatus,
+                    CreatedDate = p.CreatedDate,
+                    UpdatedDate = p.UpdatedDate
+                })
+                .FirstOrDefaultAsync();
         }
 
         public async Task<PaginatedResponseDTO<ProductResponseDTO>> ListProducts(PaginationQueryDTO query)

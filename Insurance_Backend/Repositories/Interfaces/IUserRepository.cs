@@ -9,7 +9,7 @@ namespace Insurance_Backend.Repositories.Interfaces
         Task<PaginatedResponseDTO<UserResponseDTO>> GetAllUsers( PaginationQueryDTO query);
         Task<User?> GetUserById(int id);
         Task<User?> GetUserByEmail(string email);
-        Task<User> AddUser(User user);
+        Task<UserResponseDTO> AddUser(User user);
         Task<UserResponseDTO?> ActivateUser(int id);
         Task<UserResponseDTO?> DeactivateUser(int id);
         Task<bool> EmailExists(string email);

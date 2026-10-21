@@ -17,35 +17,61 @@ namespace Insurance_Backend.Repositories.classes
         }
         public async Task<UserResponseDTO?> ActivateUser(int id)
         {
-            var user = await _context.User.FirstOrDefaultAsync(User => User.UserId == id);
-            if(user == null)
+            var user = await _context.User
+                .FirstOrDefaultAsync(u => u.UserId == id);
+
+            if (user == null)
             {
                 return null;
             }
 
             user.ActiveStatus = ActiveStatus.Active;
             user.UpdatedDate = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
 
-            return new UserResponseDTO
-            {
-                UserId = user.UserId,
-                FullName = user.FullName,
-                Email = user.Email,
-                ActiveStatus = user.ActiveStatus
-            };
+            return await _context.User
+                .AsNoTracking()
+                .Where(u => u.UserId == id)
+                .Select(u => new UserResponseDTO
+                {
+                    UserId = u.UserId,
+                    FullName = u.FullName,
+                    Email = u.Email,
+                    MobileNumber = u.MobileNumber,
+                    Role = u.Role,
+                    ActiveStatus = u.ActiveStatus,
+                    CreatedDate = u.CreatedDate
+                })
+                .FirstOrDefaultAsync();
         }
 
-        public async Task<User> AddUser(User user)
+        public async Task<UserResponseDTO> AddUser(User user)
         {
             _context.User.Add(user);
             await _context.SaveChangesAsync();
-            return user;
+
+            return await _context.User
+                .AsNoTracking()
+                .Where(u => u.UserId == user.UserId)
+                .Select(u => new UserResponseDTO
+                {
+                    UserId = u.UserId,
+                    FullName = u.FullName,
+                    Email = u.Email,
+                    MobileNumber = u.MobileNumber,
+                    Role = u.Role,
+                    ActiveStatus = u.ActiveStatus,
+                    CreatedDate = u.CreatedDate
+                })
+                .FirstAsync();
         }
 
         public async Task<UserResponseDTO?> DeactivateUser(int id)
         {
-            var user = await _context.User.FirstOrDefaultAsync(User => User.UserId == id);
+            var user = await _context.User
+                .FirstOrDefaultAsync(u => u.UserId == id);
+
             if (user == null)
             {
                 return null;
@@ -53,15 +79,23 @@ namespace Insurance_Backend.Repositories.classes
 
             user.ActiveStatus = ActiveStatus.Inactive;
             user.UpdatedDate = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
 
-            return new UserResponseDTO
-            {
-                UserId = user.UserId,
-                FullName = user.FullName,
-                Email = user.Email,
-                ActiveStatus = user.ActiveStatus
-            };
+            return await _context.User
+                .AsNoTracking()
+                .Where(u => u.UserId == id)
+                .Select(u => new UserResponseDTO
+                {
+                    UserId = u.UserId,
+                    FullName = u.FullName,
+                    Email = u.Email,
+                    MobileNumber = u.MobileNumber,
+                    Role = u.Role,
+                    ActiveStatus = u.ActiveStatus,
+                    CreatedDate = u.CreatedDate
+                })
+                .FirstOrDefaultAsync();
         }
 
         public Task<bool> EmailExists(string email)

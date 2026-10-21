@@ -52,27 +52,24 @@ namespace Insurance_Backend.Repositories.classes
 
             await _context.SaveChangesAsync();
 
-            var updatedPolicy = await _context.Policy.FirstOrDefaultAsync(p => p.PolicyId == policyId);
-
-            if (updatedPolicy == null)
-            {
-                return null;
-            }
-
-            return new PolicyResponseDTO
-            {
-                PolicyId = updatedPolicy.PolicyId,
-                PolicyNumber = updatedPolicy.PolicyNumber,
-                CustomerId = updatedPolicy.CustomerId,
-                CustomerName = updatedPolicy.Customer.User.FullName,
-                PlanId = updatedPolicy.PlanId,
-                PlanName = updatedPolicy.PolicyPlan.PlanName,
-                StartDate = updatedPolicy.StartDate,
-                EndDate = updatedPolicy.EndDate,
-                PolicyStatus = updatedPolicy.PolicyStatus,
-                TotalPremiumPaid = updatedPolicy.TotalPremiumPaid,
-                PremiumAmount = updatedPolicy.PolicyPlan.PremiumAmount
-            };
+            return await _context.Policy
+         .AsNoTracking()
+         .Where(p => p.PolicyId == policyId)
+         .Select(p => new PolicyResponseDTO
+         {
+             PolicyId = p.PolicyId,
+             PolicyNumber = p.PolicyNumber,
+             CustomerId = p.CustomerId,
+             CustomerName = p.Customer.User.FullName,
+             PlanId = p.PlanId,
+             PlanName = p.PolicyPlan.PlanName,
+             StartDate = p.StartDate,
+             EndDate = p.EndDate,
+             PolicyStatus = p.PolicyStatus,
+             TotalPremiumPaid = p.TotalPremiumPaid,
+             PremiumAmount = p.PolicyPlan.PremiumAmount
+         })
+         .FirstOrDefaultAsync();
         }
 
         public async Task<IEnumerable<PolicyResponseDTO>> GetPoliciesByCustomerId(
