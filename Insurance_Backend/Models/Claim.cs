@@ -1,6 +1,7 @@
 ﻿using Insurance_Backend.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Insurance_Backend.Enums;
 
 namespace Insurance_Backend.Models
 {

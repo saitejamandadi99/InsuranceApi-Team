@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Insurance_Backend.Enums;
+
 namespace Insurance_Backend.Models
 {
     public class InsuranceProduct
