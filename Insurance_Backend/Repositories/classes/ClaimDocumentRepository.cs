@@ -16,52 +16,56 @@ namespace Insurance_Backend.Repositories.classes
             _context = context;
         }
 
-        public async Task<ClaimDocumentResponseDTO?> AddClaimDocument( ClaimDocument document)
+        // Select only the required columns, including ClaimId.
+        private IQueryable<ClaimDocument> DocumentSummaryQuery()
+        {
+            return _context.ClaimDocument
+                .AsNoTracking()
+                .Select(d => new ClaimDocument
+                {
+                    DocumentId = d.DocumentId,
+                    ClaimId = d.ClaimId,
+                    DocumentName = d.DocumentName,
+                    DocumentType = d.DocumentType,
+                    DocumentReference = d.DocumentReference,
+                    UploadedDate = d.UploadedDate
+                });
+        }
+
+        public async Task<ClaimDocument> AddClaimDocument(
+            ClaimDocument document)
         {
             _context.ClaimDocument.Add(document);
             await _context.SaveChangesAsync();
 
-            return await _context.ClaimDocument.AsNoTracking().Where(d => d.DocumentId == document.DocumentId)
-                .Select(d => new ClaimDocumentResponseDTO
-                {
-                    DocumentId = d.DocumentId,
-                    ClaimNumber = d.Claim.ClaimNumber,
-                    DocumentName = d.DocumentName,
-                    DocumentType = d.DocumentType,
-                    DocumentReference = d.DocumentReference,
-                    UploadedDate = d.UploadedDate
-                })
-                .FirstOrDefaultAsync();
+            return await DocumentSummaryQuery()
+                .FirstAsync(d => d.DocumentId == document.DocumentId);
         }
 
-        public async Task DeleteDocument(ClaimDocument document)
+        public async Task<IEnumerable<ClaimDocument>> GetDocumentsByClaimId(
+            int claimId)
         {
-            _context.ClaimDocument.Remove(document);
-            await _context.SaveChangesAsync();
+            return await DocumentSummaryQuery()
+                .Where(d => d.ClaimId == claimId)
+                .ToListAsync();
         }
 
-        public async Task<ClaimDocumentResponseDTO?> GetDocumentById(int documentId)
+        public async Task<ClaimDocument?> GetDocumentById(int documentId)
         {
-            return await _context.ClaimDocument.AsNoTracking().Where(d => d.DocumentId == documentId)
-                .Select(d => new ClaimDocumentResponseDTO
-                {
-                    DocumentId = d.DocumentId,
-                    ClaimNumber = d.Claim.ClaimNumber,
-                    DocumentName = d.DocumentName,
-                    DocumentType = d.DocumentType,
-                    DocumentReference = d.DocumentReference,
-                    UploadedDate = d.UploadedDate
-                })
-                .FirstOrDefaultAsync();
+            return await DocumentSummaryQuery()
+                .FirstOrDefaultAsync(d => d.DocumentId == documentId);
         }
 
-        public async Task<IEnumerable<ClaimDocumentResponseDTO>> GetDocumentsByClaimId(int claimId)
+        public async Task<IEnumerable<ClaimDocument>> GetDocumentsByCustomerId(
+            int customerId)
         {
-            return await _context.ClaimDocument.AsNoTracking().Where(d => d.ClaimId == claimId)
-                .Select(d => new ClaimDocumentResponseDTO
+            return await _context.ClaimDocument
+                .AsNoTracking()
+                .Where(d => d.Claim.Policy.CustomerId == customerId)
+                .Select(d => new ClaimDocument
                 {
                     DocumentId = d.DocumentId,
-                    ClaimNumber = d.Claim.ClaimNumber,
+                    ClaimId = d.ClaimId,
                     DocumentName = d.DocumentName,
                     DocumentType = d.DocumentType,
                     DocumentReference = d.DocumentReference,
@@ -70,22 +74,8 @@ namespace Insurance_Backend.Repositories.classes
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<ClaimDocumentResponseDTO>> GetDocumentsByCustomerId(int customerId)
-        {
-            return await _context.ClaimDocument.AsNoTracking().Where(d => d.Claim.Policy.CustomerId == customerId)
-                .Select(d => new ClaimDocumentResponseDTO
-                {
-                    DocumentId = d.DocumentId,
-                    ClaimNumber = d.Claim.ClaimNumber,
-                    DocumentName = d.DocumentName,
-                    DocumentType = d.DocumentType,
-                    DocumentReference = d.DocumentReference,
-                    UploadedDate = d.UploadedDate
-                })
-                .ToListAsync();
-        }
-
-        public async Task<PaginatedResponseDTO<ClaimDocumentResponseDTO>> ListDocuments(PaginationQueryDTO query)
+        public async Task<PaginatedResponseDTO<ClaimDocument>> ListDocuments(
+            PaginationQueryDTO query)
         {
             int pageNumber = Math.Max(query.PageNumber, 1);
             int pageSize = Math.Clamp(query.PageSize, 1, 100);
@@ -107,23 +97,42 @@ namespace Insurance_Backend.Repositories.classes
             }
 
             // Sorting
-            documents = (query.SortBy?.ToLowerInvariant(),query.SortDirection?.ToLowerInvariant()) switch
+            documents = (
+                query.SortBy?.ToLowerInvariant(),
+                query.SortDirection?.ToLowerInvariant()
+            ) switch
             {
-                ("documentname", "desc") => documents.OrderByDescending(d => d.DocumentName).ThenBy(d => d.DocumentId),
+                ("documentname", "desc") =>
+                    documents.OrderByDescending(d => d.DocumentName)
+                             .ThenBy(d => d.DocumentId),
 
-                ("documentname", _) =>documents.OrderBy(d => d.DocumentName).ThenBy(d => d.DocumentId),
+                ("documentname", _) =>
+                    documents.OrderBy(d => d.DocumentName)
+                             .ThenBy(d => d.DocumentId),
 
-                ("documenttype", "desc") =>documents.OrderByDescending(d => d.DocumentType).ThenBy(d => d.DocumentId),
+                ("documenttype", "desc") =>
+                    documents.OrderByDescending(d => d.DocumentType)
+                             .ThenBy(d => d.DocumentId),
 
-                ("documenttype", _) =>documents.OrderBy(d => d.DocumentType).ThenBy(d => d.DocumentId),
+                ("documenttype", _) =>
+                    documents.OrderBy(d => d.DocumentType)
+                             .ThenBy(d => d.DocumentId),
 
-                ("uploadeddate", "desc") =>documents.OrderByDescending(d => d.UploadedDate).ThenBy(d => d.DocumentId),
+                ("uploadeddate", "desc") =>
+                    documents.OrderByDescending(d => d.UploadedDate)
+                             .ThenBy(d => d.DocumentId),
 
-                ("uploadeddate", _) =>documents.OrderBy(d => d.UploadedDate).ThenBy(d => d.DocumentId),
+                ("uploadeddate", _) =>
+                    documents.OrderBy(d => d.UploadedDate)
+                             .ThenBy(d => d.DocumentId),
 
-                ("claimnumber", "desc") =>documents.OrderByDescending(d => d.Claim.ClaimNumber).ThenBy(d => d.DocumentId),
+                ("claimnumber", "desc") =>
+                    documents.OrderByDescending(d => d.Claim.ClaimNumber)
+                             .ThenBy(d => d.DocumentId),
 
-                ("claimnumber", _) => documents.OrderBy(d => d.Claim.ClaimNumber).ThenBy(d => d.DocumentId),
+                ("claimnumber", _) =>
+                    documents.OrderBy(d => d.Claim.ClaimNumber)
+                             .ThenBy(d => d.DocumentId),
 
                 _ => documents.OrderBy(d => d.DocumentId)
             };
@@ -134,20 +143,20 @@ namespace Insurance_Backend.Repositories.classes
                 totalRecords / (double)pageSize);
 
             var pagedDocuments = await documents
-                .Select(d => new ClaimDocumentResponseDTO
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(d => new ClaimDocument
                 {
                     DocumentId = d.DocumentId,
-                    ClaimNumber = d.Claim.ClaimNumber,
+                    ClaimId = d.ClaimId,
                     DocumentName = d.DocumentName,
                     DocumentType = d.DocumentType,
                     DocumentReference = d.DocumentReference,
                     UploadedDate = d.UploadedDate
                 })
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
                 .ToListAsync();
 
-            return new PaginatedResponseDTO<ClaimDocumentResponseDTO>
+            return new PaginatedResponseDTO<ClaimDocument>
             {
                 Records = pagedDocuments,
                 CurrentPage = pageNumber,
@@ -158,6 +167,12 @@ namespace Insurance_Backend.Repositories.classes
                 SortBy = query.SortBy,
                 SortDirection = query.SortDirection
             };
+        }
+
+        public async Task DeleteDocument(ClaimDocument document)
+        {
+            _context.ClaimDocument.Remove(document);
+            await _context.SaveChangesAsync();
         }
     }
 }

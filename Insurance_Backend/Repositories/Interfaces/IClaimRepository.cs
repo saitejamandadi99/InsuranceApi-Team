@@ -6,17 +6,17 @@ namespace Insurance_Backend.Repositories.Interfaces
 {
     public interface IClaimRepository
     {
-        Task<PaginatedResponseDTO<ClaimResponseDTO>> ListClaims(PaginationQueryDTO query);
+        Task<PaginatedResponseDTO<Claim>> ListClaims(PaginationQueryDTO query);
 
-        Task<IEnumerable<ClaimResponseDTO>> GetClaimsByPolicyId(int policyId);
+        Task<IEnumerable<Claim>> GetClaimsByPolicyId(int policyId);
 
-        Task<IEnumerable<ClaimResponseDTO>> GetClaimByCustomerId(int customerId);
+        Task<IEnumerable<Claim>> GetClaimsByCustomerId(int customerId);
 
-        Task<ClaimResponseDTO?> GetClaimById(int claimId);
+        Task<Claim?> GetClaimById(int claimId);
 
-        Task<ClaimResponseDTO?> GetClaimByClaimNumber(string claimNumber);
+        Task<Claim?> GetClaimByClaimNumber(string claimNumber);
 
-        Task<ClaimResponseDTO> CreateClaim(Claim claim);
+        Task<Claim> CreateClaim(Claim claim);
 
         Task UpdateClaim(Claim claim);
 

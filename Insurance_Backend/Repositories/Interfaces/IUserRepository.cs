@@ -6,12 +6,18 @@ namespace Insurance_Backend.Repositories.Interfaces
 {
     public interface IUserRepository
     {
-        Task<PaginatedResponseDTO<UserResponseDTO>> GetAllUsers( PaginationQueryDTO query);
+        Task<PaginatedResponseDTO<User>> GetAllUsers(PaginationQueryDTO query);
+
         Task<User?> GetUserById(int id);
+
         Task<User?> GetUserByEmail(string email);
-        Task<UserResponseDTO> AddUser(User user);
-        Task<UserResponseDTO?> ActivateUser(int id);
-        Task<UserResponseDTO?> DeactivateUser(int id);
+
+        Task<User> AddUser(User user);
+
+        Task<User?> ActivateUser(int id);
+
+        Task<User?> DeactivateUser(int id);
+
         Task<bool> EmailExists(string email);
     }
 }

@@ -1,4 +1,5 @@
-﻿using Insurance_Backend.Data;
+﻿
+using Insurance_Backend.Data;
 using Insurance_Backend.DTO.RequestDTO;
 using Insurance_Backend.DTO.ResponseDTO;
 using Insurance_Backend.Enums;
@@ -11,11 +12,13 @@ namespace Insurance_Backend.Repositories.classes
     public class UserRepository : IUserRepository
     {
         private readonly AppDbContext _context;
+
         public UserRepository(AppDbContext context)
         {
             _context = context;
         }
-        public async Task<UserResponseDTO?> ActivateUser(int id)
+
+        public async Task<User?> ActivateUser(int id)
         {
             var user = await _context.User
                 .FirstOrDefaultAsync(u => u.UserId == id);
@@ -33,7 +36,7 @@ namespace Insurance_Backend.Repositories.classes
             return await _context.User
                 .AsNoTracking()
                 .Where(u => u.UserId == id)
-                .Select(u => new UserResponseDTO
+                .Select(u => new User
                 {
                     UserId = u.UserId,
                     FullName = u.FullName,
@@ -41,20 +44,22 @@ namespace Insurance_Backend.Repositories.classes
                     MobileNumber = u.MobileNumber,
                     Role = u.Role,
                     ActiveStatus = u.ActiveStatus,
-                    CreatedDate = u.CreatedDate
+                    CreatedDate = u.CreatedDate,
+                    UpdatedDate = u.UpdatedDate
                 })
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<UserResponseDTO> AddUser(User user)
+        public async Task<User> AddUser(User user)
         {
             _context.User.Add(user);
+
             await _context.SaveChangesAsync();
 
             return await _context.User
                 .AsNoTracking()
                 .Where(u => u.UserId == user.UserId)
-                .Select(u => new UserResponseDTO
+                .Select(u => new User
                 {
                     UserId = u.UserId,
                     FullName = u.FullName,
@@ -62,12 +67,13 @@ namespace Insurance_Backend.Repositories.classes
                     MobileNumber = u.MobileNumber,
                     Role = u.Role,
                     ActiveStatus = u.ActiveStatus,
-                    CreatedDate = u.CreatedDate
+                    CreatedDate = u.CreatedDate,
+                    UpdatedDate = u.UpdatedDate
                 })
                 .FirstAsync();
         }
 
-        public async Task<UserResponseDTO?> DeactivateUser(int id)
+        public async Task<User?> DeactivateUser(int id)
         {
             var user = await _context.User
                 .FirstOrDefaultAsync(u => u.UserId == id);
@@ -85,7 +91,7 @@ namespace Insurance_Backend.Repositories.classes
             return await _context.User
                 .AsNoTracking()
                 .Where(u => u.UserId == id)
-                .Select(u => new UserResponseDTO
+                .Select(u => new User
                 {
                     UserId = u.UserId,
                     FullName = u.FullName,
@@ -93,63 +99,92 @@ namespace Insurance_Backend.Repositories.classes
                     MobileNumber = u.MobileNumber,
                     Role = u.Role,
                     ActiveStatus = u.ActiveStatus,
-                    CreatedDate = u.CreatedDate
+                    CreatedDate = u.CreatedDate,
+                    UpdatedDate = u.UpdatedDate
                 })
                 .FirstOrDefaultAsync();
         }
 
         public Task<bool> EmailExists(string email)
         {
-            return  _context.User.AnyAsync(u => u.Email == email); //anyasync checks the existing of the email in the database and returns true or false
+            return _context.User
+                .AnyAsync(u => u.Email == email);
         }
 
-        public async Task<PaginatedResponseDTO<UserResponseDTO>> GetAllUsers(PaginationQueryDTO query)
+        public async Task<PaginatedResponseDTO<User>> GetAllUsers(
+            PaginationQueryDTO query)
         {
-            int pageNumber = Math.Max(query.PageNumber, 1); // to ensure that the page number is at least 1
-            int pageSize = Math.Clamp(query.PageSize, 1, 100); // to ensure that the page size is between 1 and 100 if the page size is less than 1 it will be set to 1 and if it is greater than 100 it will be set to 100
+            int pageNumber = Math.Max(query.PageNumber, 1);
+            int pageSize = Math.Clamp(query.PageSize, 1, 100);
 
-            IQueryable<User> users = _context.User.AsNoTracking();
+            IQueryable<User> users = _context.User
+                .AsNoTracking();
 
-            //search 
-            if(!string.IsNullOrWhiteSpace(query.Search))
+            // Search
+            if (!string.IsNullOrWhiteSpace(query.Search))
             {
                 string searchTerm = query.Search.Trim().ToLower();
-                users = users.Where(u => u.FullName.Contains(searchTerm) || u.Email.Contains(searchTerm));
+
+                users = users.Where(u =>
+                    u.FullName.Contains(searchTerm) ||
+                    u.Email.Contains(searchTerm));
             }
 
-            //sorting 
-
-            users = (query.SortBy?.ToLowerInvariant(), query.SortDirection?.ToLowerInvariant()) switch
+            // Sorting
+            users = (
+                query.SortBy?.ToLowerInvariant(),
+                query.SortDirection?.ToLowerInvariant()
+            ) switch
             {
-                ("fullname","desc") =>users.OrderByDescending(u=>u.FullName).ThenBy(u=>u.UserId),
-                ("fullname",_) =>users.OrderBy(u=>u.FullName).ThenBy(u=>u.UserId),
-                ("email", "desc") => users.OrderByDescending(u => u.Email).ThenBy(u => u.UserId),
-                ("email", _) => users.OrderBy(u => u.Email).ThenBy(u => u.UserId),
-                ("createddate", "desc") => users.OrderByDescending(u => u.CreatedDate).ThenBy(u => u.UserId),
-                ("createddate", _) => users.OrderBy(u => u.CreatedDate).ThenBy(u => u.UserId),
+                ("fullname", "desc") =>
+                    users.OrderByDescending(u => u.FullName)
+                         .ThenBy(u => u.UserId),
+
+                ("fullname", _) =>
+                    users.OrderBy(u => u.FullName)
+                         .ThenBy(u => u.UserId),
+
+                ("email", "desc") =>
+                    users.OrderByDescending(u => u.Email)
+                         .ThenBy(u => u.UserId),
+
+                ("email", _) =>
+                    users.OrderBy(u => u.Email)
+                         .ThenBy(u => u.UserId),
+
+                ("createddate", "desc") =>
+                    users.OrderByDescending(u => u.CreatedDate)
+                         .ThenBy(u => u.UserId),
+
+                ("createddate", _) =>
+                    users.OrderBy(u => u.CreatedDate)
+                         .ThenBy(u => u.UserId),
 
                 _ => users.OrderBy(u => u.UserId)
             };
 
             int totalRecords = await users.CountAsync();
 
-            int totalPages  = (int)Math.Ceiling(totalRecords / (double)pageSize);
+            int totalPages = (int)Math.Ceiling(
+                totalRecords / (double)pageSize);
 
-            var pagedUsers = await users.Select(u => new UserResponseDTO
-            {
-                UserId = u.UserId,
-                FullName = u.FullName,
-                Email = u.Email,
-                MobileNumber = u.MobileNumber,
-                Role = u.Role,
-                ActiveStatus = u.ActiveStatus,
-                CreatedDate = u.CreatedDate
-            }).Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
+            var pagedUsers = await users
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(u => new User
+                {
+                    UserId = u.UserId,
+                    FullName = u.FullName,
+                    Email = u.Email,
+                    MobileNumber = u.MobileNumber,
+                    Role = u.Role,
+                    ActiveStatus = u.ActiveStatus,
+                    CreatedDate = u.CreatedDate,
+                    UpdatedDate = u.UpdatedDate
+                })
+                .ToListAsync();
 
-
-            return new PaginatedResponseDTO<UserResponseDTO>
+            return new PaginatedResponseDTO<User>
             {
                 Records = pagedUsers,
                 PageSize = pageSize,
@@ -160,17 +195,33 @@ namespace Insurance_Backend.Repositories.classes
                 SortBy = query.SortBy,
                 SortDirection = query.SortDirection
             };
-
         }
 
         public async Task<User?> GetUserByEmail(string email)
         {
-            return await _context.User.FirstOrDefaultAsync(user=>user.Email == email);  //returns first user with the given email or null if not found
+            // Returns the full entity for authentication,
+            // including the stored password hash.
+            return await _context.User
+                .FirstOrDefaultAsync(u => u.Email == email);
         }
 
         public async Task<User?> GetUserById(int id)
         {
-            return await _context.User.FindAsync(id); //uses the primary key to find the user with the given id or null if not found , better to use FindAsync when searching by primary key as it is more efficient than FirstOrDefaultAsync
+            return await _context.User
+                .AsNoTracking()
+                .Where(u => u.UserId == id)
+                .Select(u => new User
+                {
+                    UserId = u.UserId,
+                    FullName = u.FullName,
+                    Email = u.Email,
+                    MobileNumber = u.MobileNumber,
+                    Role = u.Role,
+                    ActiveStatus = u.ActiveStatus,
+                    CreatedDate = u.CreatedDate,
+                    UpdatedDate = u.UpdatedDate
+                })
+                .FirstOrDefaultAsync();
         }
     }
 }

@@ -6,13 +6,18 @@ namespace Insurance_Backend.Repositories.Interfaces
 {
     public interface IProductRepository
     {
-        Task<PaginatedResponseDTO<ProductResponseDTO>> ListProducts(PaginationQueryDTO query);
-        Task<ProductResponseDTO> CreateProduct(InsuranceProduct product);
-        Task<ProductResponseDTO?> DeactivateProduct(int productId);
-        Task<ProductResponseDTO?> ActivateProduct(int productId);
-        Task<ProductResponseDTO?> UpdateProduct(int productId, ProductRequestDTO product);
-        Task<ProductResponseDTO?> GetProductById(int productId);
+        Task<PaginatedResponseDTO<InsuranceProduct>> ListProducts( PaginationQueryDTO query);
 
-        Task<ProductResponseDTO?> GetProductByProductName(string productName);
+        Task<InsuranceProduct> CreateProduct(InsuranceProduct product);
+
+        Task<InsuranceProduct?> DeactivateProduct(int productId);
+
+        Task<InsuranceProduct?> ActivateProduct(int productId);
+
+        Task<InsuranceProduct?> UpdateProduct( int productId, InsuranceProduct product);
+
+        Task<InsuranceProduct?> GetProductById(int productId);
+
+        Task<InsuranceProduct?> GetProductByProductName( string productName);
     }
 }
