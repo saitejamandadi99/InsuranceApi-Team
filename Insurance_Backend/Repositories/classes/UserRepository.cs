@@ -111,6 +111,27 @@ namespace Insurance_Backend.Repositories.classes
                 .AnyAsync(u => u.Email == email);
         }
 
+        public async Task<User?> GetUserByVerificationCodeHash(string verificationCodeHash)
+        {
+            return await _context.User.FirstOrDefaultAsync(user =>
+
+            user.EmailVerificationCodeHash == verificationCodeHash);
+
+        }
+        public async Task<User> UpdateUser(User user)
+        {
+            user.UpdatedDate = DateTime.UtcNow;
+
+
+            _context.User.Update(user);
+
+
+            await _context.SaveChangesAsync();
+            return user;
+
+        }
+
+
         public async Task<PaginatedResponseDTO<User>> GetAllUsers(
             PaginationQueryDTO query)
         {

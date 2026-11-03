@@ -21,5 +21,11 @@ namespace Insurance_Backend.Repositories.Interfaces
         Task UpdateClaim(Claim claim);
 
         Task<decimal> GetReserveAmountByPolicyId(int policyId);
+
+
+        Task<IEnumerable<Claim>> GetClaimsByUserId(int userId);
+
+        Task<string?> GetLatestUpdatedBy(int claimId);
+
     }
 }

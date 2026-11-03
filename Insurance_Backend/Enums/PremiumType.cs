@@ -4,5 +4,8 @@
     {
         OneTime = 1,
         AnnualPremium = 2,
+        Monthly = 3,
+        Quarterly = 4,
+        HalfYearly = 5
     }
 }

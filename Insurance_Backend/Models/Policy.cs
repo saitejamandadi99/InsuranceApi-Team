@@ -39,6 +39,8 @@ namespace Insurance_Backend.Models
         public virtual ICollection<PremiumPayment>? PremiumPayments { get; set; }
         public virtual ICollection<Claim>? Claims { get; set; }
 
+        public DateTime? DueDate { get; set; }
+
         [Timestamp]
         public byte[] RowVersion { get; set; } = Array.Empty<byte>();
     }

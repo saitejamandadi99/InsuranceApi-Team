@@ -1,4 +1,5 @@
-﻿using Insurance_Backend.Data;
+﻿using Insurance_Backend.Custom;
+using Insurance_Backend.Data;
 using Insurance_Backend.DTO.RequestDTO;
 using Insurance_Backend.DTO.ResponseDTO;
 using Insurance_Backend.Models;
@@ -28,7 +29,19 @@ namespace Insurance_Backend.Repositories.classes
                     DocumentName = d.DocumentName,
                     DocumentType = d.DocumentType,
                     DocumentReference = d.DocumentReference,
-                    UploadedDate = d.UploadedDate
+                    UploadedDate = d.UploadedDate,
+                    Claim = new Claim
+                    {
+                        ClaimId = d.Claim.ClaimId,
+                        ClaimNumber = d.Claim.ClaimNumber,
+                        Policy = new Policy
+                        {
+                            Customer = new CustomerProfile
+                            {
+                                UserId = d.Claim.Policy.Customer.UserId
+                            }
+                        }
+                    }
                 });
         }
 
@@ -149,6 +162,18 @@ namespace Insurance_Backend.Repositories.classes
                 {
                     DocumentId = d.DocumentId,
                     ClaimId = d.ClaimId,
+                    Claim = new Claim
+                    {
+                        ClaimId = d.Claim.ClaimId,
+                        ClaimNumber = d.Claim.ClaimNumber,
+                        Policy = new Policy
+                        {
+                            Customer = new CustomerProfile
+                            {
+                                UserId = d.Claim.Policy.Customer.UserId
+                            }
+                        }
+                    },
                     DocumentName = d.DocumentName,
                     DocumentType = d.DocumentType,
                     DocumentReference = d.DocumentReference,
@@ -173,6 +198,23 @@ namespace Insurance_Backend.Repositories.classes
         {
             _context.ClaimDocument.Remove(document);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<ClaimDocument>> GetDocumentsByUserId(
+    int userId)
+        {
+            if (userId <= 0)
+            {
+                throw new BusinessException(
+                    "Invalid user ID.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            return await DocumentSummaryQuery()
+                .Where(d => d.Claim.Policy.Customer.UserId == userId)
+                .OrderByDescending(d => d.UploadedDate)
+                .ThenByDescending(d => d.DocumentId)
+                .ToListAsync();
         }
     }
 }

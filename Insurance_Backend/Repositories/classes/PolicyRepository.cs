@@ -31,6 +31,7 @@ namespace Insurance_Backend.Repositories.classes
                     PlanId = p.PlanId,
                     StartDate = p.StartDate,
                     EndDate = p.EndDate,
+                    DueDate = p.DueDate,
                     PolicyStatus = p.PolicyStatus,
                     TotalPremiumPaid = p.TotalPremiumPaid,
                     CreatedDate = p.CreatedDate,
@@ -47,7 +48,8 @@ namespace Insurance_Backend.Repositories.classes
                     PolicyPlan = new PolicyPlan
                     {
                         PlanName = p.PolicyPlan.PlanName,
-                        PremiumAmount = p.PolicyPlan.PremiumAmount
+                        PremiumAmount = p.PolicyPlan.PremiumAmount,
+                        CoverageAmount = p.PolicyPlan.CoverageAmount
                     }
                 });
         }
@@ -101,8 +103,11 @@ namespace Insurance_Backend.Repositories.classes
 
         public async Task<Policy?> GetPolicyById(int policyId)
         {
-            return await PolicySummaryQuery()
-                .FirstOrDefaultAsync(p => p.PolicyId == policyId);
+            return await _context.Policy
+         .Include(p => p.PolicyPlan)
+         .Include(p => p.Customer)
+            .ThenInclude(c => c.User)
+        .FirstOrDefaultAsync(p => p.PolicyId == policyId);
         }
 
         public async Task<Policy?> GetPolicyByPolicyNumber(
@@ -221,6 +226,7 @@ namespace Insurance_Backend.Repositories.classes
                     PlanId = p.PlanId,
                     StartDate = p.StartDate,
                     EndDate = p.EndDate,
+                    DueDate = p.DueDate,
                     PolicyStatus = p.PolicyStatus,
                     TotalPremiumPaid = p.TotalPremiumPaid,
                     CreatedDate = p.CreatedDate,
@@ -237,7 +243,8 @@ namespace Insurance_Backend.Repositories.classes
                     PolicyPlan = new PolicyPlan
                     {
                         PlanName = p.PolicyPlan.PlanName,
-                        PremiumAmount = p.PolicyPlan.PremiumAmount
+                        PremiumAmount = p.PolicyPlan.PremiumAmount,
+                        CoverageAmount = p.PolicyPlan.CoverageAmount
                     }
                 })
                 .ToListAsync();

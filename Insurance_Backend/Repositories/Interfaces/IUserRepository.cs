@@ -19,6 +19,10 @@ namespace Insurance_Backend.Repositories.Interfaces
         Task<User?> DeactivateUser(int id);
 
         Task<bool> EmailExists(string email);
+
+        Task<User?> GetUserByVerificationCodeHash(string verificationCodeHash);
+
+        Task<User> UpdateUser(User user);
     }
 }
 

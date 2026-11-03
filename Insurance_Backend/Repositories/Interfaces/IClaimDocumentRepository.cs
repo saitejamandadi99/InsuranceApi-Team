@@ -18,5 +18,9 @@ namespace Insurance_Backend.Repositories.Interfaces
             PaginationQueryDTO query);
 
         Task DeleteDocument(ClaimDocument document);
+
+
+        Task<IEnumerable<ClaimDocument>> GetDocumentsByUserId(int userId);
+
     }
 }

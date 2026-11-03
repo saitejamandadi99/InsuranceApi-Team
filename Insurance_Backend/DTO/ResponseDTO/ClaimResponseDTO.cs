@@ -25,6 +25,7 @@ namespace Insurance_Backend.DTO.ResponseDTO
 
         public DateTime CreatedDate { get; set; }
 
-        public DateTime UpdatedDate { get; set; }
+        public string? UpdatedByName { get; set; }
+        public List<ClaimStatusHistoryResponseDTO> ClaimStatusHistory { get; set; } = new();
     }
 }

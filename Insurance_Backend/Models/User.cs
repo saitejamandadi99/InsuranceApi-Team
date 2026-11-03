@@ -32,6 +32,11 @@ namespace Insurance_Backend.Models
         public DateTime CreatedDate { get; set; } = DateTime.Now;
         public DateTime UpdatedDate { get; set; } = DateTime.Now;
 
+        public bool IsEmailVerified { get; set; } = false;
+
+        public string? EmailVerificationCodeHash { get; set; }
+        public DateTime? EmailVerificationCodeExpiry { get; set; }
+
         public virtual CustomerProfile? CustomerProfile { get; set; }
         public virtual ICollection<ClaimStatusHistory>? ClaimStatusHistories { get; set; }
 

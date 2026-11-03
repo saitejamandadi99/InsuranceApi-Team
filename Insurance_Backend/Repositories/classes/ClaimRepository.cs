@@ -1,4 +1,5 @@
-﻿using Insurance_Backend.Data;
+﻿using Insurance_Backend.Custom;
+using Insurance_Backend.Data;
 using Insurance_Backend.DTO.RequestDTO;
 using Insurance_Backend.DTO.ResponseDTO;
 using Insurance_Backend.Enums;
@@ -41,6 +42,7 @@ namespace Insurance_Backend.Repositories.classes
                         PolicyNumber = c.Policy.PolicyNumber,
                         Customer = new CustomerProfile
                         {
+                            UserId = c.Policy.Customer.UserId,
                             User = new User
                             {
                                 FullName = c.Policy.Customer.User.FullName
@@ -77,8 +79,8 @@ namespace Insurance_Backend.Repositories.classes
 
         public async Task<Claim?> GetClaimById(int claimId)
         {
-            return await ClaimSummaryQuery()
-                .FirstOrDefaultAsync(c => c.ClaimId == claimId);
+            return await _context.Claim.Include(c => c.Policy).ThenInclude(p => p!.Customer).ThenInclude(cu => cu!.User).FirstOrDefaultAsync(c => c.ClaimId == claimId);
+       
         }
 
         public async Task<IEnumerable<Claim>> GetClaimsByPolicyId(int policyId)
@@ -240,5 +242,28 @@ namespace Insurance_Backend.Repositories.classes
 
             await _context.SaveChangesAsync();
         }
+
+
+        public async Task<IEnumerable<Claim>> GetClaimsByUserId(int userId)
+        {
+            if (userId <= 0)
+            {
+                throw new BusinessException(
+                    "Invalid user ID.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            return await ClaimSummaryQuery()
+                .Where(c => c.Policy.Customer.UserId == userId)
+                .OrderByDescending(c => c.CreatedDate)
+                .ThenByDescending(c => c.ClaimId)
+                .ToListAsync();
+        }
+
+        public async Task<string?> GetLatestUpdatedBy(int claimId)
+        {
+            return await _context.ClaimStatusHistory.Where(h => h.ClaimId == claimId).OrderByDescending(h => h.UpdatedDate).ThenByDescending(h => h.HistoryId).Select(h => h.User.FullName).FirstOrDefaultAsync();
+        }
+
     }
 }

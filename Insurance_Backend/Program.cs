@@ -1,5 +1,6 @@
 using CloudinaryDotNet;
 using Insurance_Backend.Config;
+using Insurance_Backend.Custom;
 using Insurance_Backend.Data;
 using Insurance_Backend.Profiles;
 using Insurance_Backend.Repositories.classes;
@@ -19,7 +20,7 @@ namespace Insurance_Backend
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static  void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -36,13 +37,30 @@ namespace Insurance_Backend
             builder.Services.AddScoped<IPolicyRepository, PolicyRepository>();
             builder.Services.AddScoped<IClaimRepository, ClaimRepository>();
             builder.Services.AddScoped<IClaimDocumentRepository, ClaimDocumentRepository>();
+            builder.Services.AddScoped<ICustomerProfileRepository, CustomerProfileRepository>();
+            builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
+            builder.Services.AddScoped<IPremiumPaymentRepository, PremiumPaymentRepository>();
+            builder.Services.AddScoped<IPolicyPlanRepository, PolicyPlanRepository>();
+            builder.Services.AddScoped<IClaimStatusHistoryRepository, ClaimStatusHistoryRepository>();
 
 
-
-
-
+            builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<ITokenService, TokenService>();
-
+            builder.Services.AddScoped<IProductService, ProductService>();
+            builder.Services.AddScoped<IPolicyService, PolicyService>();
+            builder.Services.AddScoped<IClaimService, ClaimService>();
+            builder.Services.AddScoped<ICloudDocumentService, CloudDocumentService>();
+            builder.Services.AddScoped<IClaimStatusHistoryService, ClaimStatusHistoryService>();
+            builder.Services.AddScoped<IPolicyPlanService, PolicyPlanService>();
+            builder.Services.AddScoped<IPremiumPaymentService, PremiumPaymentService>();
+            builder.Services.AddScoped<IDashboardService, DashboardService>();
+            builder.Services.AddScoped<ICustomerProfileService, CustomerProfileService>();
+            builder.Services.AddScoped<IImageService, ImageService>();
+            builder.Services.AddScoped<IClaimDocumentService, ClaimDocumentService>();
+            builder.Services.AddScoped<IEmailService, EmailService>();
+            builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("EmailSettings"));
 
             builder.Services.AddSwaggerGen();
 
@@ -103,6 +121,16 @@ namespace Insurance_Backend
                 };
             });
 
+            // CORS configuration
+             builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAngular", policy =>
+                {
+                    policy.WithOrigins("http://localhost:4200",
+                        "http://localhost:4201").AllowAnyHeader().AllowAnyMethod();
+                });
+            });
+
 
             builder.Services.AddSwaggerGen(options =>
             {
@@ -140,15 +168,19 @@ namespace Insurance_Backend
 
             var app = builder.Build();
 
+            
+
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-
             app.UseHttpsRedirection();
+            app.UseCors("AllowAngular");
+            app.UseGlobalExceptionMiddleware();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
 

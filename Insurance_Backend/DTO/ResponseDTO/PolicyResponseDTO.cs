@@ -12,8 +12,11 @@ namespace Insurance_Backend.DTO.ResponseDTO
         public string PlanName { get; set; } = string.Empty;
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
+
+        public DateTime? DueDate { get; set; }
         public PolicyStatus PolicyStatus { get; set; }
         public decimal TotalPremiumPaid { get; set; }
         public decimal PremiumAmount { get; set; }
+        public decimal CoverageAmount { get; set; }
     }
 }
