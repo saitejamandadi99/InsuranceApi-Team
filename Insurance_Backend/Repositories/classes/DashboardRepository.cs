@@ -44,6 +44,7 @@ namespace Insurance_Backend.Repositories.classes
 
             var topClaims = await _context.Claim
                 .AsNoTracking()
+                .Where(c => c.ClaimStatus != ClaimStatus.Rejected && c.ClaimStatus != ClaimStatus.Approved)
                 .OrderByDescending(c => c.ClaimAmount)
                 .ThenBy(c => c.ClaimId)
                 .Take(5)

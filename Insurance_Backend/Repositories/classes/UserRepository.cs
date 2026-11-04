@@ -145,10 +145,17 @@ namespace Insurance_Backend.Repositories.classes
             if (!string.IsNullOrWhiteSpace(query.Search))
             {
                 string searchTerm = query.Search.Trim().ToLower();
+                var roleMatches = Enum.GetValues<Role>()
+                .Where(r => r.ToString().Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                var statusMatches = Enum.GetValues<ActiveStatus>()
+                    .Where(s => s.ToString().Contains(searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
 
                 users = users.Where(u =>
                     u.FullName.Contains(searchTerm) ||
-                    u.Email.Contains(searchTerm));
+                    u.Email.Contains(searchTerm) ||
+                    roleMatches.Contains(u.Role) ||    
+                    statusMatches.Contains(u.ActiveStatus));
             }
 
             // Sorting

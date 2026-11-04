@@ -262,7 +262,8 @@ namespace Insurance_Backend.Services.Classes
                 await _policyRepo.GetPoliciesByCustomerId(
                     customer.CustomerId);
 
-            if (existingPolicies.Any(p => p.PlanId == plan.PlanId))
+            if (existingPolicies.Any(p => p.PlanId == plan.PlanId &&  p.PolicyStatus != PolicyStatus.Cancelled &&
+                p.PolicyStatus != PolicyStatus.Expired))
             {
                 throw new BusinessException(
                     "You have already subscribed to this policy plan.",

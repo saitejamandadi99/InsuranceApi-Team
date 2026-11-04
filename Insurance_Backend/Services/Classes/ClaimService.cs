@@ -92,6 +92,17 @@ namespace Insurance_Backend.Services.Classes
             {
                 throw new BusinessException($"Only {availableAmount:C} coverage is available for this policy.", 400);
             }
+            // Customer can raise a claim only after completing 20 days from policy start date.
+            var claimEligibleDate = policy.StartDate.Date.AddDays(20);
+
+            if (DateTime.Today < claimEligibleDate)
+            {
+                throw new BusinessException(
+                    $"You can raise a claim only after 20 days from the policy start date. You can raise a claim from {claimEligibleDate:dd MMM yyyy}.",
+                    400
+                );
+            }
+
             if (request.IncidentDate > DateTime.Now)
             {
                 throw new BusinessException("Incident date cannot be a future date.", 400);
@@ -222,18 +233,18 @@ namespace Insurance_Backend.Services.Classes
                 throw new BusinessException("Admin can only approve or reject claims.", 400);
             }
 
-            //if (newStatus == ClaimStatus.Approved &&
-            //    claim.ClaimStatus != ClaimStatus.RecommendedForApproval)
-            //{
-            //    throw new BusinessException("Only claims recommended for approval can be approved.", 409);
+            // Officer must review the claim before admin action.
+            if (claim.ClaimStatus != ClaimStatus.RecommendedForApproval &&
+                claim.ClaimStatus != ClaimStatus.RecommendedForRejection)
+            {
+                throw new BusinessException(
+                    "Claim must be reviewed by an officer before admin action.", 409);
+            }
 
-            //}
-            //if (newStatus == ClaimStatus.Rejected &&
-            //    claim.ClaimStatus != ClaimStatus.RecommendedForRejection)
-            //{
-            //    throw new BusinessException("Only claims recommended for rejection can be rejected.", 409);
-
-            //}
+            if (claim.ClaimStatus == ClaimStatus.RecommendedForRejection && newStatus != ClaimStatus.Rejected)
+            {
+                throw new BusinessException("Claims recommended for rejection can only be rejected.", 409);
+            }
             return await UpdateClaimStatus(
                 claimId,
                 newStatus,
@@ -365,76 +376,46 @@ namespace Insurance_Backend.Services.Classes
 
         }
 
-        private async Task<ClaimResponseDTO> MapClaimResponse(
-        Insurance_Backend.Models.Claim claim)
+        private async Task<ClaimResponseDTO> MapClaimResponse(Insurance_Backend.Models.Claim claim)
         {
             var response = _mapper.Map<ClaimResponseDTO>(claim);
 
-            // Get the latest user who updated the claim.
-            var updatedBy = await _historyRepo
-                .GetLatestUpdatedByForClaims(new[] { claim.ClaimId });
-
-            response.UpdatedByName =
-                updatedBy.GetValueOrDefault(claim.ClaimId);
-
-            // Get the complete claim status history.
+            // Retrieve claim history internally to identify the officer.
             var history = await _historyRepo
                 .GetCompleteHistoryByClaimId(claim.ClaimId);
 
-            response.ClaimStatusHistory = history
-                .Select(h => new ClaimStatusHistoryResponseDTO
-                {
-                    HistoryId = h.HistoryId,
-                    PreviousStatus = h.PreviousStatus,
-                    NewStatus = h.NewStatus,
-                    Remarks = h.Remarks,
-                    UpdatedBy = h.User?.FullName ?? "Unknown",
-                    ClaimNumber = claim.ClaimNumber,
-                    UpdatedDate = h.UpdatedDate
-                })
-                .ToList();
+            // Find the latest officer recommendation.
+            var officerHistory = history.Where(h =>
+            h.NewStatus == ClaimStatus.RecommendedForApproval ||
+            h.NewStatus == ClaimStatus.RecommendedForRejection)                
+                .OrderByDescending(h => h.UpdatedDate).FirstOrDefault();
+
+            response.UpdatedByName =
+                officerHistory?.User?.FullName ?? "Not reviewed yet";
 
             return response;
-
         }
-
-        private async Task<IEnumerable<ClaimResponseDTO>> MapClaimResponses(
-          IEnumerable<Insurance_Backend.Models.Claim> claims)
+        private async Task<IEnumerable<ClaimResponseDTO>> MapClaimResponses(IEnumerable<Insurance_Backend.Models.Claim> claims)
         {
             var claimList = claims.ToList();
-            var responses = _mapper.Map<List<ClaimResponseDTO>>(claimList);
-            var updatedBy = await _historyRepo
-                .GetLatestUpdatedByForClaims(
-                    claimList.Select(c => c.ClaimId));
 
-            var claimLookup = claimList.ToDictionary(c => c.ClaimId);
+            var responses = _mapper.Map<List<ClaimResponseDTO>>(claimList);
 
             foreach (var response in responses)
             {
-                response.UpdatedByName =
-                    updatedBy.GetValueOrDefault(response.ClaimId);
-
                 var history = await _historyRepo
                     .GetCompleteHistoryByClaimId(response.ClaimId);
 
-                var claim = claimLookup[response.ClaimId];
+                var officerHistory = history.Where(h =>
+                        h.NewStatus == ClaimStatus.RecommendedForApproval ||
+                        h.NewStatus == ClaimStatus.RecommendedForRejection).OrderByDescending(h => h.UpdatedDate).FirstOrDefault();
 
-                response.ClaimStatusHistory = history
-                    .Select(h => new ClaimStatusHistoryResponseDTO
-                    {
-                        HistoryId = h.HistoryId,
-                        PreviousStatus = h.PreviousStatus,
-                        NewStatus = h.NewStatus,
-                        Remarks = h.Remarks,
-                        UpdatedBy = h.User?.FullName ?? "Unknown",
-                        ClaimNumber = claim.ClaimNumber,
-                        UpdatedDate = h.UpdatedDate
-                    })
-                    .ToList();
+                response.UpdatedByName =
+                    officerHistory?.User?.FullName ?? "Not reviewed yet";
             }
             return responses;
-
         }
+
 
     }
 }
