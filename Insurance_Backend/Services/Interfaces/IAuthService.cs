@@ -10,6 +10,9 @@ namespace Insurance_Backend.Services.Interfaces
         Task<SuccessResponseDTO<string>> VerifyEmail(VerifyEmailRequestDTO request);
 
         Task<SuccessResponseDTO<string>> ResendVerification(ResendVerificationRequestDTO request);
+
+        Task<SuccessResponseDTO<string>> ForgotPassword(ForgotPasswordRequestDTO request);
+        Task<SuccessResponseDTO<string>> ResetPassword(ResetPasswordRequestDTO request);
     }
 
 }

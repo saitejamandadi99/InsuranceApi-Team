@@ -39,6 +39,11 @@ namespace Insurance_Backend.Models
 
         public virtual CustomerProfile? CustomerProfile { get; set; }
         public virtual ICollection<ClaimStatusHistory>? ClaimStatusHistories { get; set; }
+        
+        // FORGOT PASSWORD
+        public string? PasswordResetOtpHash { get; set; }
+
+        public DateTime? PasswordResetOtpExpiry { get; set; }
 
     }
 }
