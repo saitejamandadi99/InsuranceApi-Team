@@ -45,5 +45,26 @@ namespace Insurance_Backend.Controllers
 
             return Ok(response);
         }
+        // FORGOT PASSWORD
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(
+            [FromBody] ForgotPasswordRequestDTO request)
+        {
+            var response = await _authServie.ForgotPassword(request);
+
+            return Ok(response);
+        }
+
+        // RESET PASSWORD
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(
+            [FromBody] ResetPasswordRequestDTO request)
+        {
+            var response = await _authServie.ResetPassword(request);
+
+            return Ok(response);
+        }
     }
 }
