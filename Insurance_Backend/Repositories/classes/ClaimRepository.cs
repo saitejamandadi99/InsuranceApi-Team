@@ -103,22 +103,29 @@ namespace Insurance_Backend.Repositories.classes
         }
 
         public async Task<PaginatedResponseDTO<Claim>> ListClaims(
-            PaginationQueryDTO query)
+    PaginationQueryDTO query)
         {
             int pageNumber = Math.Max(query.PageNumber, 1);
             int pageSize = Math.Clamp(query.PageSize, 1, 100);
 
-            IQueryable<Claim> claims = _context.Claim.AsNoTracking();
+            IQueryable<Claim> claims = _context.Claim
+                .AsNoTracking();
 
-            // Searching
+            // Search
             if (!string.IsNullOrWhiteSpace(query.Search))
             {
-                string search = query.Search.Trim().ToLower();
+                string searchTerm = query.Search.Trim().ToLower();
+                var statusMatches = Enum.GetValues<ClaimStatus>()
+                .Where(status => status.ToString()
+                    .Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
 
                 claims = claims.Where(c =>
-                    c.ClaimNumber.ToLower().Contains(search) ||
-                    c.Policy.PolicyNumber.ToLower().Contains(search) ||
-                    c.Policy.Customer.User.FullName.ToLower().Contains(search));
+                    c.ClaimNumber.ToLower().Contains(searchTerm) ||
+                    c.Policy.PolicyNumber.ToLower().Contains(searchTerm) ||
+                    c.Policy.Customer.User.FullName.ToLower().Contains(searchTerm) ||
+                    statusMatches.Contains(c.ClaimStatus)
+                );
             }
 
             // Sorting
@@ -186,12 +193,13 @@ namespace Insurance_Backend.Repositories.classes
                 _ => claims.OrderBy(c => c.ClaimId)
             };
 
+            // Total Records
             int totalRecords = await claims.CountAsync();
 
             int totalPages = (int)Math.Ceiling(
                 totalRecords / (double)pageSize);
 
-            // Select only the required columns after filtering and sorting.
+            // Pagination and projection
             var pagedClaims = await claims
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -212,6 +220,7 @@ namespace Insurance_Backend.Repositories.classes
                     Policy = new Policy
                     {
                         PolicyNumber = c.Policy.PolicyNumber,
+
                         Customer = new CustomerProfile
                         {
                             User = new User
