@@ -539,7 +539,152 @@ namespace Insurance_Backend.Services.Classes
             return Convert.ToHexString(hash);
 
         }
+        // FORGOT PASSWORD
 
+        public async Task<SuccessResponseDTO<string>> ForgotPassword(
+            ForgotPasswordRequestDTO request)
+        {
+            var email = request.Email.Trim();
+
+            var user = await _userRepo.GetUserByEmail(email);
+
+            // Do not reveal whether the email exists.
+            if (user == null)
+            {
+                return new SuccessResponseDTO<string>
+                {
+                    Success = true,
+                    Message = "If the email is registered, a password reset OTP will be sent.",
+                    Data = "Please check your email."
+                };
+            }
+
+            var otp = GenerateOtp();
+
+            user.PasswordResetOtpHash = HashOtp(otp);
+
+            // OTP expires after 5 minutes.
+            user.PasswordResetOtpExpiry = DateTime.UtcNow.AddMinutes(5);
+
+            await _userRepo.UpdateUser(user);
+
+            try
+            {
+                string emailSubject = "Password Reset OTP - Insurance Management System";
+
+                string emailBody = $@"
+            <h3>Hello {System.Net.WebUtility.HtmlEncode(user.FullName)}!</h3>
+            <p>We received a request to reset your password.</p>
+            <p>Your password reset OTP is:</p>
+            <h2><b>{otp}</b></h2>
+            <p>This OTP is valid for 5 minutes.</p>
+            <p>Please do not share this OTP with anyone.</p>
+            <br/>
+            <p>Best regards,</p>
+            <p>Insurance Management Team</p>";
+
+                await _emailService.SendEmailAsync(
+                    user.Email,
+                    emailSubject,
+                    emailBody);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Password reset email delivery failed for user {UserId}.",
+                    user.UserId);
+
+                user.PasswordResetOtpHash = null;
+                user.PasswordResetOtpExpiry = null;
+
+                await _userRepo.UpdateUser(user);
+
+                throw new BusinessException(
+                    "Unable to send password reset OTP. Please try again later.",
+                    StatusCodes.Status503ServiceUnavailable);
+            }
+
+            return new SuccessResponseDTO<string>
+            {
+                Success = true,
+                Message = "If the email is registered, a password reset OTP will be sent.",
+                Data = "Please check your email."
+            };
+        }
+        // RESET PASSWORD
+
+        public async Task<SuccessResponseDTO<string>> ResetPassword(
+            ResetPasswordRequestDTO request)
+        {
+            var email = request.Email.Trim();
+
+            var user = await _userRepo.GetUserByEmail(email);
+
+            if (user == null)
+            {
+                throw new BusinessException(
+                    "Invalid email or OTP.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            // Check whether OTP exists.
+            if (string.IsNullOrWhiteSpace(user.PasswordResetOtpHash) ||
+                user.PasswordResetOtpExpiry == null)
+            {
+                throw new BusinessException(
+                    "Please request a new password reset OTP.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            // Check OTP expiry.
+            if (user.PasswordResetOtpExpiry.Value <= DateTime.UtcNow)
+            {
+                throw new BusinessException(
+                    "OTP has expired. Please request a new OTP.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            // Compare OTP hashes.
+            var suppliedHash = HashOtp(request.OTP);
+
+            var storedHash = Convert.FromHexString(
+                user.PasswordResetOtpHash);
+
+            var providedHash = Convert.FromHexString(suppliedHash);
+
+            if (!CryptographicOperations.FixedTimeEquals(
+                providedHash, storedHash))
+            {
+                throw new BusinessException(
+                    "Invalid email or OTP.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            // Hash the new password.
+            user.Password = BCrypt.Net.BCrypt.HashPassword(
+                request.NewPassword);
+
+            // Clear OTP after successful password reset.
+            user.PasswordResetOtpHash = null;
+
+            user.PasswordResetOtpExpiry = null;
+
+            user.UpdatedDate = DateTime.UtcNow;
+
+            await _userRepo.UpdateUser(user);
+
+            _logger.LogInformation(
+                "Password reset successfully for user {UserId}.",
+                user.UserId);
+
+            return new SuccessResponseDTO<string>
+            {
+                Success = true,
+                Message = "Password reset successfully.",
+                Data = "You can now login using your new password."
+            };
+        }
     }
 
 }
