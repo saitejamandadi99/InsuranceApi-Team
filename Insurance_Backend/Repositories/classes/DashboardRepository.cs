@@ -57,13 +57,24 @@ namespace Insurance_Backend.Repositories.classes
                 })
                 .ToListAsync();
 
+            var recentPolicies = await GetRecentPoliciesAsync();
+
+            var recentPayments = await GetRecentPaymentsAsync();
             return new AdminDashboardResponseDTO
             {
                 ActiveUsers = activeUsers,
+
                 InactiveUsers = inactiveUsers,
+
                 PendingClaimsCount = pendingClaimsCount,
+
                 PendingClaimsAmount = pendingClaimsAmount,
-                TopClaims = topClaims
+
+                TopClaims = topClaims,
+
+                RecentPolicies = recentPolicies,
+
+                RecentPayments = recentPayments
             };
         }
 
@@ -71,6 +82,9 @@ namespace Insurance_Backend.Repositories.classes
         public async Task<OfficerDashboardResponseDTO>
             GetOfficerDashboardAsync()
         {
+            var recentPolicies = await GetRecentPoliciesAsync();
+            var recentPayments = await GetRecentPaymentsAsync();
+
             var pendingClaims = _context.Claim
                 .AsNoTracking()
                 .Where(c =>
@@ -100,7 +114,9 @@ namespace Insurance_Backend.Repositories.classes
             {
                 PendingClaimsCount = pendingClaimsCount,
                 PendingClaimsAmount = pendingClaimsAmount,
-                TopClaims = topClaims
+                TopClaims = topClaims,
+                RecentPolicies = recentPolicies,
+                RecentPayments = recentPayments
             };
         }
 
@@ -108,6 +124,7 @@ namespace Insurance_Backend.Repositories.classes
         public async Task<CustomerDashboardResponseDTO>
             GetCustomerDashboardAsync(int userId)
         {
+
             var customer = await _context.CustomerProfile
                 .AsNoTracking()
                 .Where(c => c.UserId == userId)
@@ -122,6 +139,13 @@ namespace Insurance_Backend.Repositories.classes
                 throw new KeyNotFoundException(
                     "Customer profile was not found.");
             }
+            var recentPolicies =
+                await GetRecentPoliciesAsync(customer.CustomerId);
+
+            var recentPayments =
+                await GetRecentPaymentsAsync(customer.CustomerId);
+
+
 
             var customerClaims = _context.Claim
                 .AsNoTracking()
@@ -163,8 +187,111 @@ namespace Insurance_Backend.Repositories.classes
                 TotalClaimsCount = totalClaimsCount,
                 PendingClaimsCount = pendingClaimsCount,
                 PendingClaimsAmount = pendingClaimsAmount,
-                ClaimHistory = claimHistory
+                ClaimHistory = claimHistory,
+                RecentPolicies = recentPolicies,
+                RecentPayments = recentPayments
             };
+        }
+
+        private async Task<List<DashboardPolicyResponseDTO>>
+    GetRecentPoliciesAsync(int? customerId = null)
+        {
+            var query = _context.Policy
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (customerId.HasValue)
+            {
+                query = query.Where(p =>
+                    p.CustomerId == customerId.Value);
+            }
+
+            return await query
+                .OrderByDescending(p => p.CreatedDate)
+                .ThenByDescending(p => p.PolicyId)
+                .Take(5)
+                .Select(p => new DashboardPolicyResponseDTO
+                {
+                    PolicyId = p.PolicyId,
+
+                    PolicyNumber = p.PolicyNumber,
+
+                    CustomerName =
+                        p.Customer != null && p.Customer.User != null
+                            ? p.Customer.User.FullName
+                            : "",
+
+                    ProductName =
+                        p.PolicyPlan != null &&
+                        p.PolicyPlan.InsuranceProduct != null
+                            ? p.PolicyPlan.InsuranceProduct.ProductName
+                            : "",
+
+                    PlanName =
+                        p.PolicyPlan != null
+                            ? p.PolicyPlan.PlanName
+                            : "",
+
+                    StartDate = p.StartDate,
+
+                    EndDate = p.EndDate,
+
+                    PolicyStatus = p.PolicyStatus,
+
+                    TotalPremiumPaid = p.TotalPremiumPaid,
+
+                    CreatedDate = p.CreatedDate
+                })
+                .ToListAsync();
+        }
+
+        private async Task<List<DashboardPaymentResponseDTO>>
+    GetRecentPaymentsAsync(int? customerId = null)
+        {
+            var query = _context.PremiumPayment
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (customerId.HasValue)
+            {
+                query = query.Where(p =>
+                    p.Policy != null &&
+                    p.Policy.CustomerId == customerId.Value);
+            }
+
+            return await query
+                .OrderByDescending(p => p.PaymentDate)
+                .ThenByDescending(p => p.PaymentId)
+                .Take(5)
+                .Select(p => new DashboardPaymentResponseDTO
+                {
+                    PaymentId = p.PaymentId,
+
+                    PolicyId = p.PolicyId,
+
+                    PolicyNumber =
+                        p.Policy != null
+                            ? p.Policy.PolicyNumber
+                            : "",
+
+                    CustomerName =
+                        p.Policy != null &&
+                        p.Policy.Customer != null &&
+                        p.Policy.Customer.User != null
+                            ? p.Policy.Customer.User.FullName
+                            : "",
+
+                    Amount = p.Amount,
+
+                    PaymentDate = p.PaymentDate,
+
+                    PaymentMode = p.PaymentMode,
+
+                    TransactionReference = p.TransactionReference,
+
+                    PaymentStatus = p.PaymentStatus
+                })
+                .ToListAsync();
         }
     }
 

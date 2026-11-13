@@ -55,26 +55,73 @@ namespace Insurance_Backend.Repositories.classes
                 });
         }
 
-        // Get All Claim Status History
-        public async Task<PaginatedResponseDTO<ClaimStatusHistory>>
-            GetAllHistory(PaginationQueryDTO query)
+
+        // Get All Claim Status History using Stored Procedure
+public async Task<PaginatedResponseDTO<ClaimStatusHistory>>
+    GetAllHistory(PaginationQueryDTO query)
         {
-            IQueryable<ClaimStatusHistory> histories = GetHistoryQuery();
+            int pageNumber = Math.Max(query.PageNumber, 1);
+            int pageSize = Math.Clamp(query.PageSize, 1, 100);
 
-            // Search by remarks, claim number, or updater name
-            if (!string.IsNullOrWhiteSpace(query.Search))
+            string? search = query.Search;
+
+            string sortBy = query.SortBy ?? "HistoryId";
+            string sortDirection = query.SortDirection ?? "DESC";
+
+            // Execute stored procedure using EF Core
+            var results = await _context.Database
+                .SqlQuery<ClaimStatusHistoryResponseDTO>($"""
+            EXEC sp_GetAllClaimStatusHistory
+                @PageNumber = {pageNumber},
+                @PageSize = {pageSize},
+                @Search = {search},
+                @SortBy = {sortBy},
+                @SortDirection = {sortDirection}
+            """)
+                .ToListAsync();
+
+            int totalRecords = results.FirstOrDefault()?.TotalRecords ?? 0;
+
+            int totalPages = (int)Math.Ceiling(
+                totalRecords / (double)pageSize);
+
+            // Map response DTO to existing entity
+            var histories = results.Select(h => new ClaimStatusHistory
             {
-                string searchTerm = query.Search.Trim();
+                HistoryId = h.HistoryId,
+                ClaimId = h.ClaimId,
+                PreviousStatus = h.PreviousStatus,
+                NewStatus = h.NewStatus,
+                Remarks = h.Remarks,
+                UpdatedBy = h.UpdatedById,
+                UpdatedDate = h.UpdatedDate,
 
-                histories = histories.Where(h =>
-                    h.Remarks.Contains(searchTerm) ||
-                    (h.Claim != null &&
-                     h.Claim.ClaimNumber.Contains(searchTerm)) ||
-                    (h.User != null &&
-                     h.User.FullName.Contains(searchTerm)));
-            }
+                Claim = new Claim
+                {
+                    ClaimId = h.ClaimId,
+                    ClaimNumber = h.ClaimNumber,
+                    ClaimStatus = (Insurance_Backend.Enums.ClaimStatus)
+                        h.CurrentClaimStatus
+                },
 
-            return await GetPaginatedHistory(histories, query);
+                User = new User
+                {
+                    UserId = h.UpdatedById,
+                    FullName = h.UpdatedBy
+                }
+            }).ToList();
+
+            return new PaginatedResponseDTO<ClaimStatusHistory>
+            {
+                Records = histories,
+                CurrentPage = pageNumber,
+                PageSize = pageSize,
+                TotalRecords = totalRecords,
+                TotalPages = totalPages,
+                IsLastPage = pageNumber >= totalPages,
+                SortBy = sortBy,
+                SortDirection = sortDirection
+            };
         }
 
         // Get Claim Status History By ID

@@ -21,9 +21,12 @@ namespace Insurance_Backend.Services.Interfaces
                 int userId,
                 PaginationQueryDTO query);
 
-        Task<ClaimStatusHistoryResponseDTO> AddHistory(
-            ClaimStatusHistory history);
+        Task<ClaimStatusHistoryResponseDTO> AddHistory(ClaimStatusHistory history);
 
+        Task<PaginatedResponseDTO<ClaimStatusHistoryResponseDTO>>
+            GetMyClaimHistory(
+            int userId,
+            PaginationQueryDTO query);
         Task<bool> HistoryExists(int id);
     }
 

@@ -1,10 +1,16 @@
-﻿namespace Insurance_Backend.DTO
+﻿using Insurance_Backend.DTO.ResponseDTO;
+
+namespace Insurance_Backend.DTO
 {
     public class OfficerDashboardResponseDTO
     {
         public int PendingClaimsCount { get; set; }
         public decimal PendingClaimsAmount { get; set; }
-
         public IEnumerable<DashboardClaimDTO> TopClaims { get; set; }
+        public IEnumerable<DashboardPolicyResponseDTO> RecentPolicies { get; set; }
+            = new List<DashboardPolicyResponseDTO>();
+        public IEnumerable<DashboardPaymentResponseDTO> RecentPayments { get; set; }
+            = new List<DashboardPaymentResponseDTO>();
+
     }
 }

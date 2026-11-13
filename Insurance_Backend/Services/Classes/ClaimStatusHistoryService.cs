@@ -56,7 +56,8 @@ namespace Insurance_Backend.Services.Classes
                     StatusCodes.Status404NotFound);
             }
 
-            return _mapper.Map<ClaimStatusHistoryResponseDTO>(history);
+          //  return _mapper.Map<ClaimStatusHistoryResponseDTO>(history);
+            return MapHistory(history);
         }
 
         // Get claim status history by claim ID
@@ -192,7 +193,8 @@ namespace Insurance_Backend.Services.Classes
                 result.ClaimId,
                 result.UpdatedBy);
 
-            return _mapper.Map<ClaimStatusHistoryResponseDTO>(result);
+            //return _mapper.Map<ClaimStatusHistoryResponseDTO>(result);
+            return MapHistory(result);
         }
 
         // Check whether history exists
@@ -268,13 +270,12 @@ namespace Insurance_Backend.Services.Classes
 
         // Map paginated repository results to response DTOs
         private PaginatedResponseDTO<ClaimStatusHistoryResponseDTO>
-            MapPaginatedResponse(
-                PaginatedResponseDTO<ClaimStatusHistory> result)
+    MapPaginatedResponse(
+        PaginatedResponseDTO<ClaimStatusHistory> result)
         {
             return new PaginatedResponseDTO<ClaimStatusHistoryResponseDTO>
             {
-                Records = _mapper.Map<
-                    IEnumerable<ClaimStatusHistoryResponseDTO>>(result.Records),
+                Records = result.Records.Select(MapHistory).ToList(),
 
                 CurrentPage = result.CurrentPage,
                 PageSize = result.PageSize,
@@ -284,6 +285,59 @@ namespace Insurance_Backend.Services.Classes
                 SortBy = result.SortBy,
                 SortDirection = result.SortDirection
             };
+        }
+        private ClaimStatusHistoryResponseDTO MapHistory(
+    ClaimStatusHistory history)
+        {
+            return new ClaimStatusHistoryResponseDTO
+            {
+                HistoryId = history.HistoryId,
+                ClaimId = history.ClaimId,
+
+                PreviousStatus = history.PreviousStatus,
+                NewStatus = history.NewStatus,
+
+                Remarks = history.Remarks,
+
+                UpdatedBy = history.User?.FullName ?? string.Empty,
+                UpdatedById = history.UpdatedBy,
+
+                ClaimNumber = history.Claim?.ClaimNumber ?? string.Empty,
+
+                CurrentClaimStatus = history.Claim != null
+                    ? (int)history.Claim.ClaimStatus
+                    : 0,
+
+                UpdatedDate = history.UpdatedDate
+            };
+        }
+        // Get claim status history belonging to logged-in customer's claims
+        public async Task<PaginatedResponseDTO<ClaimStatusHistoryResponseDTO>>
+            GetMyClaimHistory(
+                int userId,
+                PaginationQueryDTO query)
+        {
+            if (userId <= 0)
+            {
+                throw new BusinessException(
+                    "Invalid user ID.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            ValidatePagination(query);
+
+            if (!await _historyRepo.UserExists(userId))
+            {
+                throw new BusinessException(
+                    "User not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            var result = await _historyRepo.GetMyClaimHistory(
+                userId,
+                query);
+
+            return MapPaginatedResponse(result);
         }
     }
 }
