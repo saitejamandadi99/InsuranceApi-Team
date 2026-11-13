@@ -81,7 +81,7 @@ namespace Insurance_Backend.Controllers
         {
             var userId = User.GetUserId();
 
-            var histories = await _historyService.GetHistoryByUserId(
+            var histories = await _historyService.GetMyClaimHistory(
                 userId,
                 query);
 
